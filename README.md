@@ -12,7 +12,7 @@ $ git clone https://github.com/rodolfoap/local-spark-cluster.git
 
 $ cd local-spark-cluster
 
-$ docker-compose up
+$ docker-compose up -d
 
 $ docker exec -it spark-master bash
 
