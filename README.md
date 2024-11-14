@@ -40,3 +40,7 @@ mydata: List[(String, String)] = List((pierre,T), (jeanne,E))
 
 scala> ...
 ```
+
+### Spark Web Interface
+
+While `spark-shell` is active, point your browser to [http://localhost:4040/](http://localhost:4040/)
