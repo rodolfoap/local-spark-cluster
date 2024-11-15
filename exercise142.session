@@ -1,0 +1,67 @@
+import scala.util.Random
+val random = new Random(13)
+val findNearPoint:(Int, Int)=>(Double, Double) = (x, y) => {
+  val ang=random.nextDouble()*2*math.Pi;
+  val r=random.nextDouble()*1.0;
+  (ang, r);
+}
+findNearPoint(0,0)
+// (Double, Double) = (4.585488896292762,0.44461356134079055)
+// (Double, Double) = (0.3222263866625771,0.7200775170504272)
+// (Double, Double) = (2.5778865341437958,0.08090263533974473)
+// (Double, Double) = (5.6918892415599895,0.4001516611740866)
+// (Double, Double) = (4.796229734489143,0.8870776924552658)
+
+val findNearPoint:(Int, Int)=>(Double, Double)=(cx, cy)=>{
+  val ang=random.nextDouble()*2*math.Pi;
+  val r=random.nextDouble()*1.0;
+  val x=cx+r*math.cos(ang);
+  val y=cy+r*math.sin(ang);
+  (x, y)
+}
+findNearPoint(0,0)
+// (Double, Double) = (0.527198968286272,-0.40880340397249715)
+// (Double, Double) = (-0.4701378000212952,0.5622481513535096)
+// (Double, Double) = (-0.34985436996728414,-0.1347805837110213)
+// (Double, Double) = (0.05623320185366142,-0.969705607839369)
+// (Double, Double) = (0.0030420268138843967,-0.009002560883571846)
+
+val p00=(1 to 15000).map(_=>findNearPoint(0, 0))
+val p22=(1 to 15000).map(_=>findNearPoint(2, 2))
+val p33=(1 to 15000).map(_=>findNearPoint(3, 3))
+
+val points=p00++p22++p33
+points.length
+// Int = 45000
+
+val pointsDF=points.toDF("x", "y")
+pointsDF.show
+// +--------------------+--------------------+
+// |                   x|                   y|
+// +--------------------+--------------------+
+// | 0.04693031215173188| 0.35683555472951517|
+// |  0.7468758645013982|  0.4504980299312973|
+// |-0.01389419835470215| -0.4265413335235129|
+
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.clustering.KMeans
+
+val assembler = new VectorAssembler().setInputCols(Array("x", "y")).setOutputCol("features")
+val assembledDF = assembler.transform(pointsDF)
+assembledDF.show(truncate=false)
+// +---------------------+---------------------+--------------------------------------------+
+// |x                    |y                    |features                                    |
+// +---------------------+---------------------+--------------------------------------------+
+// |0.04693031215173188  |0.35683555472951517  |[0.04693031215173188,0.35683555472951517]   |
+// |0.7468758645013982   |0.4504980299312973   |[0.7468758645013982,0.4504980299312973]     |
+// |-0.01389419835470215 |-0.4265413335235129  |[-0.01389419835470215,-0.4265413335235129]  |
+// |0.21412831080092057  |0.5167189409167847   |[0.21412831080092057,0.5167189409167847]    |
+// |-0.09388074332914051 |0.5047334450112018   |[-0.09388074332914051,0.5047334450112018]   |
+// |-0.4223496336340718  |-0.857047508082883   |[-0.4223496336340718,-0.857047508082883]    |
+// |-0.12927708221128123 |-0.8712547261601867  |[-0.12927708221128123,-0.8712547261601867]  |
+
+val kmeans = new KMeans().setK(3).setSeed(42)
+val model = kmeans.fit(assembledDF)
+
+model.clusterCenters
+// Array[org.apache.spark.ml.linalg.Vector] = Array([1.9857588910103938,1.9929400982903303], [0.00622335144753147,0.004918829663099133], [3.001691562905508,3.0079191797054197])
