@@ -1,17 +1,25 @@
+// How to find a random?
 import scala.util.Random
 val random = new Random(13)
+
+// Ok, let's create a function that finds a near-point with radius<=1
+// Using Jean-Luc's formulae
 val findNearPoint:(Int, Int)=>(Double, Double) = (x, y) => {
   val ang=random.nextDouble()*2*math.Pi;
   val r=random.nextDouble()*1.0;
   (ang, r);
 }
+
+// Let's test it
 findNearPoint(0,0)
 // (Double, Double) = (4.585488896292762,0.44461356134079055)
 // (Double, Double) = (0.3222263866625771,0.7200775170504272)
 // (Double, Double) = (2.5778865341437958,0.08090263533974473)
 // (Double, Double) = (5.6918892415599895,0.4001516611740866)
 // (Double, Double) = (4.796229734489143,0.8870776924552658)
+// Seems fine!
 
+// Now, let's go all the way, generating the near-point
 val findNearPoint:(Int, Int)=>(Double, Double)=(cx, cy)=>{
   val ang=random.nextDouble()*2*math.Pi;
   val r=random.nextDouble()*1.0;
@@ -19,21 +27,28 @@ val findNearPoint:(Int, Int)=>(Double, Double)=(cx, cy)=>{
   val y=cy+r*math.sin(ang);
   (x, y)
 }
+
+// Test it...
 findNearPoint(0,0)
 // (Double, Double) = (0.527198968286272,-0.40880340397249715)
 // (Double, Double) = (-0.4701378000212952,0.5622481513535096)
 // (Double, Double) = (-0.34985436996728414,-0.1347805837110213)
 // (Double, Double) = (0.05623320185366142,-0.969705607839369)
 // (Double, Double) = (0.0030420268138843967,-0.009002560883571846)
+// Voilà!!!
+
 
 val p00=(1 to 15000).map(_=>findNearPoint(0, 0))
 val p22=(1 to 15000).map(_=>findNearPoint(2, 2))
 val p33=(1 to 15000).map(_=>findNearPoint(3, 3))
 
+// ++ is supposed to concatenate...
 val points=p00++p22++p33
-points.length
-// Int = 45000
 
+points.length
+// Int = 45000 Great!
+
+// Let's create a dataframe
 val pointsDF=points.toDF("x", "y")
 pointsDF.show
 // +--------------------+--------------------+
@@ -43,11 +58,20 @@ pointsDF.show
 // |  0.7468758645013982|  0.4504980299312973|
 // |-0.01389419835470215| -0.4265413335235129|
 
+// THIS FAILS!
+// val kmeans = new KMeans().setK(3).setSeed(42)
+// val model = kmeans.fit(pointsDF)
+// 24/11/15 08:20:04 ERROR Instrumentation: java.lang.IllegalArgumentException: features does not exist. Available: x, y
+//                   at org.apache.spark.sql.types.StructType.$anonfun$apply$1(StructType.scala:282)
+// We need a "features" column
+
+// This section with the help of ChatGPT
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.clustering.KMeans
-
 val assembler = new VectorAssembler().setInputCols(Array("x", "y")).setOutputCol("features")
 val assembledDF = assembler.transform(pointsDF)
+
+// Let's check the features
 assembledDF.show(truncate=false)
 // +---------------------+---------------------+--------------------------------------------+
 // |x                    |y                    |features                                    |
@@ -60,6 +84,7 @@ assembledDF.show(truncate=false)
 // |-0.4223496336340718  |-0.857047508082883   |[-0.4223496336340718,-0.857047508082883]    |
 // |-0.12927708221128123 |-0.8712547261601867  |[-0.12927708221128123,-0.8712547261601867]  |
 
+// Now, it will work!
 val kmeans = new KMeans().setK(3).setSeed(42)
 val model = kmeans.fit(assembledDF)
 
